@@ -22,7 +22,7 @@ struct Lines {
  * @return Length of the 'str'. If str == NULL returns -1.
  */
 
-int myStrlen (char * str) {
+int myStrlen (const char * str) {
     if (!str) {
         return -1;
     }
@@ -41,14 +41,14 @@ int myStrlen (char * str) {
  * @return Zero if succsess, -1 if sourseString == NULL.
  */
 
-int myStrcpy (char * destination, char * sourseString) {
+int myStrcpy (char * destination, const char * sourseString) {
     if (sourseString == NULL) {
         return -1;
     }
     if (destination == NULL) {
-        destination = calloc(sizeof(char), myStrlen(sourseString));
+        destination = (char *) calloc(sizeof(char), myStrlen(sourseString));
     } else {
-        destination = realloc(destination, myStrlen(sourseString) * sizeof(char));
+        destination = (char *) realloc(destination, myStrlen(sourseString) * sizeof(char));
     }
     for (int i = 0; i < myStrlen(sourseString); i++) {
         destination[i] = sourseString[i];
@@ -68,7 +68,7 @@ int isLetter (char symbol) {
  * Skips all symbolbols in the strings that are not letters. Isn't sensitive for case.
  * @return Zero on secess, -1 if firstStr or secondStr equals NULL.
  */
-int myStrcmp (char * firstStr, char * secondStr) {
+int myStrcmp (const char * firstStr, const char * secondStr) {
     int index1 = 0, index2 = 0;
     if ((firstStr == NULL) || (secondStr == NULL)) {
         return -1;
@@ -84,6 +84,9 @@ int myStrcmp (char * firstStr, char * secondStr) {
         }
         char1 = firstStr[index1];
         char2 = secondStr[index2];
+        if ((char1 == '\0') || (char2 == '\0')) {
+            break;
+        }
         // to lowercase
         if ((char1 >= 'A') && (char1 <= 'Z')) {
             char1 += 'a' - 'A';
@@ -122,7 +125,7 @@ char * readLine (int fd, char * symbol) {
     if (*symbol == '\n') {
         return NULL;
     }
-    char * tmpLine = calloc(BUFFER_SIZE, sizeof(char));
+    char * tmpLine = (char *) calloc(BUFFER_SIZE, sizeof(char));
     int count = 0;
     tmpLine[count++] = *symbol;
     int curSize = BUFFER_SIZE;
@@ -135,7 +138,7 @@ char * readLine (int fd, char * symbol) {
             tmpLine[count] = *symbol;
         } else {
             curSize += BUFFER_SIZE;
-            tmpLine = realloc(tmpLine, curSize);
+            tmpLine = (char *) realloc(tmpLine, curSize);
             tmpLine[count] = *symbol;
         }
         count++;
@@ -143,7 +146,7 @@ char * readLine (int fd, char * symbol) {
     if (count < curSize) {
         tmpLine[count] = '\0';
     } else {
-        tmpLine = realloc(tmpLine, ++curSize);
+        tmpLine = (char *) realloc(tmpLine, ++curSize);
         tmpLine[count] = '\0';
     }
     return tmpLine;
@@ -155,7 +158,7 @@ char * readLine (int fd, char * symbol) {
  * @param size Size of the list.
  */
 char ** moveToArray (struct Lines * list, int size) {
-    char ** linesArr = calloc(sizeof(char *), size);
+    char ** linesArr = (char **) calloc(sizeof(char *), size);
     for (int i = 0; i < size; i++) {
         linesArr[i] = list->line;
         struct Lines * old = list;
@@ -248,7 +251,7 @@ void quickSort (char ** lines, int linesSize) {
  * @param outputFilename Name of file in which result be put.
  */
 void sortLines (char * filename, char * outputFilename) {
-    struct Lines * lines = calloc(1, sizeof(struct Lines));
+    struct Lines * lines = (struct Lines *) calloc(1, sizeof(struct Lines));
     struct Lines * pointer = lines;
     int strCount = 0;
     //open file
@@ -264,7 +267,7 @@ void sortLines (char * filename, char * outputFilename) {
         if (pointer->line == NULL) {
             lines->line = tmpLine;
         } else {
-            pointer->next = calloc (sizeof(struct Lines), 1);
+            pointer->next = (struct Lines *) calloc (sizeof(struct Lines), 1);
             pointer = pointer->next;
             pointer->line = tmpLine;
         }
@@ -281,7 +284,9 @@ void sortLines (char * filename, char * outputFilename) {
         char endl = '\n';
         write(fd, linesArray[i], myStrlen(linesArray[i]));
         write(fd, &endl, sizeof(char));
+        free(linesArray[i]);
     }
+    free(linesArray);
     close(fd);
 }
 
@@ -289,21 +294,19 @@ void sortLines (char * filename, char * outputFilename) {
 
 void testMyStrcmp () {
     printf("Start testing myStrcmp.\n");
-    char * str1 = calloc(sizeof(char), myStrlen("aaaaaaaa"));
-    char * str2 = calloc(sizeof(char), myStrlen("BBBBBBBB"));
+    char * str1 = (char *) "aaaaaaaa";
+    char * str2 = (char *) "BBBBBBBB";
     int res = 0;
     printf("Test 1\n");
-    myStrcpy(str1, "aaaaaaaa");
-    myStrcpy(str2, "BBBBBBBB");
     if ((res = myStrcmp(str1, str2)) != -1) {
         printf("ERROR: expexted %d but got %d\n", -1, res);
     } else {
         printf ("OK\n");
     }
     printf("Test 2\n");
-    myStrcpy(str1, "'aaa");
-    myStrcpy(str2, "aa,a");
-    if ((res = myStrcmp(str1, str2)) != 0) {
+    char * str3 = (char *) "'aaa";
+    char * str4 = (char *) "aa,a";
+    if ((res = myStrcmp(str3, str4)) != 0) {
         printf("ERROR: expexted %d but got %d\n", 0, res);
     } else {
         printf ("OK\n");
@@ -315,11 +318,11 @@ void testSimpleSort() {
     printf("Start testing simpleSort.\n");
     int error = 0;
     printf("Test 1\n");
-    char ** strings = calloc(sizeof(char *), 3);
-    char ** trueStrings = calloc(sizeof(char *), 3);
-    strings[2] = trueStrings[0] = "ccccccccccccc";
-    strings[0] = trueStrings[1] = "DDDDDDDDDDDDD";
-    strings[1] = trueStrings[2] = "eeeeeeeeeeeee";
+    char ** strings = (char **) calloc(sizeof(char *), 3);
+    char ** trueStrings = (char **) calloc(sizeof(char *), 3);
+    strings[2] = trueStrings[0] = (char *) "ccccccccccccc";
+    strings[0] = trueStrings[1] = (char *) "DDDDDDDDDDDDD";
+    strings[1] = trueStrings[2] = (char *) "eeeeeeeeeeeee";
     simpleSort(strings, 3);
     for (int i = 0; i < 3; i++) {
         if(myStrcmp(strings[i], trueStrings[i])) {
@@ -331,11 +334,13 @@ void testSimpleSort() {
         printf("OK\n");
     }
     free(strings);
+    free(trueStrings);
     error = 0;
     printf("Test 2\n");
-    strings = calloc(sizeof(char *), 2);
-    strings[1] = trueStrings[0] = "aaaaaaaaaaaaa";
-    strings[0] = trueStrings[1] = "bbbbbbbbbbbbb";
+    strings = (char **) calloc(sizeof(char *), 2);
+    trueStrings = (char **) calloc(sizeof(char *), 2);
+    strings[1] = trueStrings[0] = (char *) "aaaaaaaaaaaaa";
+    strings[0] = trueStrings[1] = (char *) "bbbbbbbbbbbbb";
     simpleSort(strings, 2);
     for (int i = 0; i < 2; i++) {
         if(myStrcmp(strings[i], trueStrings[i])) {
@@ -346,6 +351,8 @@ void testSimpleSort() {
     if (!error) {
         printf("OK\n");
     }
+    free(strings);
+    free(trueStrings);
 }
 
 void testQuickSort() {
@@ -353,16 +360,16 @@ void testQuickSort() {
     printf("Finish testing simpleSort.\n");
     printf("Start testing quickSort.\n");
     int error = 0;
-    char ** strings = calloc(sizeof(char *), 8);
-    char ** trueStrings = calloc(sizeof(char *), 8);
-    strings[5] = trueStrings[0] = "aaaaaaaaaaaaa";
-    strings[7] = trueStrings[1] = "aaabbb";
-    strings[6] = trueStrings[2] = "a,'. []!:abbb";
-    strings[1] = trueStrings[3] = "bbbbbbbbbbbbb";
-    strings[3] = trueStrings[4] = "ccccccccccccc";
-    strings[0] = trueStrings[5] = "DDDDDDDDDDDDD";
-    strings[4] = trueStrings[6] = "eeeeeeeeeeeee";
-    strings[2] = trueStrings[7] = "fffffffffffff";
+    char ** strings = (char **) calloc(sizeof(char *), 8);
+    char ** trueStrings = (char **) calloc(sizeof(char *), 8);
+    strings[5] = trueStrings[0] = (char *) "aaaaaaaaaaaaa";
+    strings[7] = trueStrings[1] = (char *) "aaabbb";
+    strings[6] = trueStrings[2] = (char *) "a,'. []!:abbb";
+    strings[1] = trueStrings[3] = (char *) "bbbbbbbbbbbbb";
+    strings[3] = trueStrings[4] = (char *) "ccccccccccccc";
+    strings[0] = trueStrings[5] = (char *) "DDDDDDDDDDDDD";
+    strings[4] = trueStrings[6] = (char *) "eeeeeeeeeeeee";
+    strings[2] = trueStrings[7] = (char *) "fffffffffffff";
     quickSort(strings, 8);
     for (int i = 0; i < 8; i++) {
         if(myStrcmp(strings[i], trueStrings[i])) {
@@ -373,6 +380,8 @@ void testQuickSort() {
     if (!error) {
         printf("OK\n");
     }
+    free(strings);
+    free(trueStrings);
 }
 
 /*! Main function. Take two arguments:
